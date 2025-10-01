@@ -1,14 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 import { TransactionStatus, TransactionType } from '../enums';
-import {
-    AddLiquidityData,
-    DeployContractData,
-    MMSwapData,
-    MoveFundsData,
-    RemoveLiquidityData,
-    SwapData,
-} from '../types';
 
 export type TransactionDocument = Transaction & Document;
 
@@ -25,35 +17,35 @@ export type TransactionDocument = Transaction & Document;
   },
 })
 export class Transaction {
-  @Prop({ required: true })
-  userId: string;
+  // @Prop({ required: true })
+  // userId: string;
+
+  // @Prop({ required: true })
+  // chainId: number;
+
+  @Prop({ required: false, default: '' })
+  txHash: string;
 
   @Prop({ required: true })
-  chainId: number;
+  tokenAddress: string;
 
   @Prop({ required: true })
-  transactionHash: string;
+  amount: number;
 
   @Prop({ required: true })
-  from: string;
+  fromUser: string;
 
   @Prop({ required: true })
-  to: string;
+  toUser: string;
+
+  @Prop({ required: true })
+  fromAddress: string;
+
+  @Prop({ required: true })
+  toAddress: string;
 
   @Prop({ required: true, enum: TransactionType, type: String })
   type: TransactionType;
-
-  @Prop({ required: false, type: Object })
-  data:
-    | SwapData
-    | MMSwapData
-    | AddLiquidityData
-    | RemoveLiquidityData
-    | DeployContractData
-    | MoveFundsData;
-
-  @Prop({ required: false })
-  mmSettingId: string;
 
   @Prop({
     required: false,

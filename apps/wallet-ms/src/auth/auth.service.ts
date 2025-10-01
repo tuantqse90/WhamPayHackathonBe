@@ -16,12 +16,14 @@ import {
     RegisterResponseDto,
     TwitterLoginDto,
     UserDocument,
+    UserDto,
     UserRole,
 } from '@pay-wallet/domain';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { UserService } from '../user/user.service';
 import { WalletService } from '../wallet/wallet.service';
+import { mapObject } from '@pay-wallet/common';
 
 @Injectable()
 export class AuthService {
@@ -50,8 +52,13 @@ export class AuthService {
     if (!walletResult.success) {
       throw new BadRequestException('Failed to create wallet');
     }
-    user.address = walletResult.data.address;
-    return { user };
+    const response = mapObject<UserDocument, UserDto>(
+      'UserDocument',
+      'UserDto',
+      user.toJSON()
+    );
+    response.address = walletResult.data.address;
+    return { user: response };
   }
 
   async validateUser(loginRequest: LoginRequestDto): Promise<UserDocument> {
@@ -74,6 +81,7 @@ export class AuthService {
     const payload: JwtPayloadDto = {
       id: user.id ?? user._id?.toString(),
       name: user.name,
+      username: user.username,
       email: user.email,
       status: user.status,
       role: user.role,
@@ -107,6 +115,7 @@ export class AuthService {
     const payload: JwtPayloadDto = {
       id: user.id ?? user._id?.toString(),
       name: user.name,
+      username: user.username,
       email: user.email,
       status: user.status,
       role: user.role,
@@ -139,7 +148,7 @@ export class AuthService {
     twitterUser: TwitterLoginDto
   ): Promise<LoginResponseDto> {
     let user = await this.userService.findByTwitterId(twitterUser.twitterId);
-    let isCreateMainWallet = false
+    let isCreatedWallet = false;
 
     if (!user) {
       user = await this.userService.findByUsername(twitterUser.username);
@@ -149,28 +158,8 @@ export class AuthService {
           user.twitterId = twitterUser.twitterId;
           user.provider = twitterUser.provider;
           await user.save();      
-        } else {
-         user.username = '';
-          if (twitterUser.email && !user.email) {
-            user.email = twitterUser.email;
-          }
-          await user.save();
-        }
-      } else {
-        user = await this.userService.findByEmail(twitterUser.email || `${twitterUser.twitterId}@twitter.com`);
-        if (user && !user.twitterId) {
-          user.name = twitterUser.name;
-          user.username = twitterUser.username;
-          user.twitterId = twitterUser.twitterId;
-          user.provider = twitterUser.provider;
-          await user.save();
         }
       }
-    } else if(user.username !== twitterUser.username || user.name !== twitterUser.name || user.provider !== twitterUser.provider) {
-      user.name = twitterUser.name;
-      user.username = twitterUser.username;
-      user.provider = twitterUser.provider;
-      await user.save();
     }
 
     let address = '';
@@ -179,7 +168,7 @@ export class AuthService {
       if (!isEnableRegister) {
         throw new ForbiddenException('Register is currently disabled!');
       }
-      await this.userService.createUser({
+      user = await this.userService.createUser({
         name: twitterUser.name,
         username: twitterUser.username,
         email: twitterUser.email || `${twitterUser.twitterId}@twitter.com`,
@@ -189,7 +178,6 @@ export class AuthService {
         status: 'active',
         role: UserRole.USER,
       });
-      user = await this.userService.findByTwitterId(twitterUser.twitterId);
       const walletResult = await this.walletService.createMainWallet(
         user.id
       );
@@ -197,7 +185,7 @@ export class AuthService {
         throw new BadRequestException('Failed to create wallet');
       }
       address = walletResult.data.address;
-      isCreateMainWallet = walletResult.success;
+      isCreatedWallet = walletResult.success;
     } else {
       const wallet = await this.walletService.exportMainWallet(
         user.id ?? user._id?.toString()
@@ -208,6 +196,7 @@ export class AuthService {
     const payload: JwtPayloadDto = {
       id: user.id ?? user._id?.toString(),
       name: user.name,
+      username: user.username,
       email: user.email,
       status: user.status,
       role: user.role,
@@ -221,6 +210,6 @@ export class AuthService {
       user.id ?? user._id?.toString(),
       refreshToken
     );
-    return { accessToken, refreshToken, user, isCreateMainWallet };
+    return { accessToken, refreshToken, user, isCreatedWallet };
   }
 }

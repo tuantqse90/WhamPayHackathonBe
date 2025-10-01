@@ -11,22 +11,28 @@ export class JwtPayloadDto {
   @IsNotEmpty()
   id: string;
 
-  @ApiProperty({ description: 'User name' })
+  @ApiProperty({ description: 'Display name' })
   @IsString()
   @IsNotEmpty()
   name: string;
 
-  @ApiProperty({ description: 'User email address' })
+
+  @ApiProperty({ description: 'Username' })
+  @IsString()
+  @IsNotEmpty()
+  username: string;
+
+  @ApiProperty({ description: 'Email' })
   @IsEmail()
   @IsNotEmpty()
   email: string;
 
-  @ApiProperty({ description: 'Account status' })
+  @ApiProperty({ description: 'User Status' })
   @IsString()
   @IsNotEmpty()
   status: string;
 
-  @ApiProperty({ description: 'Account status' })
+  @ApiProperty({ description: 'User Role' })
   @IsString()
   @IsNotEmpty()
   role: string;
@@ -36,7 +42,7 @@ export class JwtPayloadDto {
   @IsString()
   twitterId?: string;
 
-  @ApiProperty({ description: 'User Wallet Address', required: false })
+  @ApiProperty({ description: 'User Address', required: false })
   @IsNotEmpty()
   @IsString()
   address?: string;

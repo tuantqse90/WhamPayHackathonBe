@@ -29,15 +29,12 @@ import {
 } from '@pay-wallet/domain';
 import { ethers, isAddress, Wallet, ZeroAddress } from 'ethers';
 import { Model } from 'mongoose';
-import { v4 as uuidv4 } from 'uuid';
 import {
   SendTokenResponseDto,
   SendTokensDto,
   TransferTokenDto,
   WalletInfoDto,
   WalletMultiSendDto,
-  WithdrawQueueItem,
-  WithdrawRequestDto,
 } from './models';
 
 @Injectable()
@@ -52,9 +49,11 @@ export class WalletService {
     @InjectModel(Transaction.name)
     private readonly transactionModel: Model<TransactionDocument>,
     @InjectModel(User.name)
-    private readonly userModel: Model<UserDocument>,
+    private readonly userModel: Model<UserDocument>
   ) {
-    const rpcUrl = this.configService.get<string>('RPC_URL') || 'https://scroll-sepolia.drpc.org';
+    const rpcUrl =
+      this.configService.get<string>('RPC_URL') ||
+      'https://scroll-sepolia.drpc.org';
     this.provider = new ethers.JsonRpcProvider(rpcUrl);
   }
 
@@ -97,7 +96,6 @@ export class WalletService {
       true
     );
   }
-
 
   /**
    * Create a new wallet
@@ -230,9 +228,7 @@ export class WalletService {
       type: WalletType.MAIN,
     });
     if (!wallet)
-      throw new BadRequestException(
-        'General wallet not found for this userId'
-      );
+      throw new BadRequestException('General wallet not found for this userId');
     const privateKey = decrypt(
       wallet.encryptedPrivateKey,
       wallet.privateKeySalt
@@ -319,7 +315,8 @@ export class WalletService {
   async multiSend(
     payload: WalletMultiSendDto
   ): Promise<BaseResultDto<SendTokenResponseDto>> {
-    const { userId, wallets, isNative, tokenAddress, amount, chainId } = payload;
+    const { userId, wallets, isNative, tokenAddress, amount, chainId } =
+      payload;
     if (!isNative && !isAddress(tokenAddress)) {
       throw new BadRequestException('Address is not valid');
     }
@@ -337,7 +334,10 @@ export class WalletService {
       throw new BadRequestException('Wallet not found');
     }
 
-    const privateKey = decrypt(wallet.encryptedPrivateKey, wallet.privateKeySalt);
+    const privateKey = decrypt(
+      wallet.encryptedPrivateKey,
+      wallet.privateKeySalt
+    );
     const signer = new ethers.Wallet(privateKey, defaultProvider);
     let decimals = 18;
     let balance: bigint;
@@ -382,104 +382,6 @@ export class WalletService {
     );
   }
 
-  /**
-   * Enqueue a withdrawal job in Redis for a specific account
-   */
-  // async enqueueWithdrawJob(
-  //   userId: string,
-  //   job: WithdrawQueueItem
-  // ): Promise<void> {
-  //   const queueKey = `withdrawal-queue-${userId}`;
-  //   await this.redisService.getClient().rpush(queueKey, JSON.stringify(job));
-  // }
-
-  // /**
-  //  * Dequeue a withdrawal job from Redis for a specific account
-  //  */
-  // async dequeueWithdrawJob(
-  //   userId: string
-  // ): Promise<WithdrawQueueItem | null> {
-  //   const queueKey = `withdrawal-queue-${userId}`;
-  //   const jobStr = await this.redisService.getClient().lpop(queueKey);
-  //   if (!jobStr) return null;
-  //   return JSON.parse(jobStr);
-  // }
-
-  // /**
-  //  * Get withdrawal queue length for a specific account
-  //  */
-  // async getWithdrawQueueLength(userId: string): Promise<number> {
-  //   const queueKey = `withdrawal-queue-${userId}`;
-  //   return await this.redisService.getClient().llen(queueKey);
-  // }
-
-  /**
-   * Withdraw tokens from multiple wallets to a recipient.
-   * Enqueues jobs for processing.
-   */
-  async withdraw(dto: WithdrawRequestDto): Promise<BaseResultDto<string[]>> {
-    const {
-      wallets,
-      amount,
-      tokenAddress,
-      chainId = 8543,
-      userId,
-      isNative,
-    } = dto;
-    if (!isNative && !isAddress(tokenAddress)) {
-      throw new BadRequestException('Address is not valid');
-    }
-    if (isNative && isAddress(tokenAddress)) {
-      throw new BadRequestException(
-        'Should not provide address when withdraw native'
-      );
-    }
-    //find main wallet
-    const mainWallet = await this.walletModel.findOne({
-      userId,
-      type: WalletType.MAIN,
-    });
-    if (!mainWallet) {
-      throw new BadRequestException('General wallet not found');
-    }
-
-    const recipient = mainWallet.address.toLowerCase();
-    const jobIds: string[] = [];
-    for (let i = 0; i < wallets.length; i++) {
-      const jobId = uuidv4();
-      const job: WithdrawQueueItem = {
-        jobId,
-        chainId,
-        userId,
-        recipient,
-        isNative,
-        tokenAddress,
-        walletAddress: wallets[i],
-        amount: amount.toString(),
-        createdAt: new Date().toISOString(),
-      };
-      // await this.enqueueWithdrawJob(userId, job);
-      jobIds.push(jobId);
-      await this.transactionModel.create({
-        chainId,
-        userId,
-        from: wallets[i],
-        to: recipient,
-        type: TransactionType.WITHDRAW,
-        status: TransactionStatus.PROCESSING,
-        transactionHash:
-          '0x0000000000000000000000000000000000000000000000000000000000000000',
-        data: {
-          jobId,
-          tokenAddress,
-          recipient,
-          amount,
-        },
-      });
-    }
-    return new BaseResultDto(jobIds, 'Withdrawal jobs enqueued', true);
-  }
-
   async transfer(payload: TransferTokenDto) {
     const { userId, recipient, tokenAddress, isNative, amount } = payload;
     const user = await this.userModel.findOne({
@@ -500,12 +402,10 @@ export class WalletService {
       username: recipient,
     });
     if (!recipientUser) {
-      recipientUser = await this.userModel.insertOne(
-        {
-          username: recipient,
-          email: `${recipient}@gmail.com`
-        }
-      );
+      recipientUser = await this.userModel.insertOne({
+        username: recipient,
+        email: `${recipient}@gmail.com`,
+      });
       const newWallet = await this.createMainWallet(recipientUser.id);
       recipientAddress = newWallet.data.address;
     } else {
@@ -522,14 +422,42 @@ export class WalletService {
     }
     let result: any;
     const signer = new ethers.Wallet(privateKey, this.provider);
+    const transaction = new this.transactionModel({
+      txHash: '',
+      tokenAddress: isNative ? ZeroAddress : tokenAddress,
+      amount: amount,
+      fromUser: user.username,
+      toUser: recipientUser.username,
+      fromAddress: wallet.address,
+      toAddress: recipientAddress,
+      type: TransactionType.TRANSFER,
+      status: TransactionStatus.PENDING,
+    });
     if (isNative) {
-      result = await transferNativeToken(this.provider, signer, recipientAddress, amount.toString());
+      result = await transferNativeToken(
+        this.provider,
+        signer,
+        recipientAddress,
+        amount.toString()
+      );
     } else {
       if (!isAddress(tokenAddress)) {
         throw new BadRequestException('Token address is not valid');
       }
-      result = await transferToken(signer, tokenAddress, recipientAddress, amount.toString());
+      result = await transferToken(
+        signer,
+        tokenAddress,
+        recipientAddress,
+        amount.toString()
+      );
     }
+    if (result.success) {
+      transaction.txHash = result.txHash;
+      transaction.status = TransactionStatus.COMPLETED;
+    } else {
+      transaction.status = TransactionStatus.FAILED;
+    }
+    await transaction.save();
     return new BaseResultDto<SendTokenResponseDto>(
       result,
       result.success ? 'Token transfer successful' : 'Token transfer failed',
@@ -537,10 +465,7 @@ export class WalletService {
     );
   }
 
-  async getWalletPrivateKey(
-    address: string,
-    userId: string
-  ): Promise<string> {
+  async getWalletPrivateKey(address: string, userId: string): Promise<string> {
     const wallet = await this.walletModel.findOne({
       address: address.toLowerCase(),
       userId,

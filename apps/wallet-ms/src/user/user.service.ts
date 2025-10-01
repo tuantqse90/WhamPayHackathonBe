@@ -26,13 +26,9 @@ export class UserService {
    * @param userData - The User data to create
    * @returns The created UserDto
    */
-  async createUser(userData: Partial<User>): Promise<UserDto> {
+  async createUser(userData: Partial<User>){
     const user = await this.userModel.create(userData);
-    return mapObject<UserDocument, UserDto>(
-      'UserDocument',
-      'UserDto',
-      user.toJSON()
-    );
+    return user;
   }
 
   /**

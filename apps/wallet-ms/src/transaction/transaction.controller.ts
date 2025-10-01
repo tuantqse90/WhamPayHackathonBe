@@ -1,16 +1,16 @@
 import { Controller, Get, Param, Query, Req, UseGuards } from '@nestjs/common';
 import {
-    ApiBearerAuth,
-    ApiOperation,
-    ApiParam,
-    ApiQuery,
-    ApiResponse,
-    ApiTags,
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+  ApiResponse,
+  ApiTags,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '@pay-wallet/common';
 import { BasePaginationResultDto, TransactionDto } from '@pay-wallet/domain';
 import { Request } from 'express';
-import { TransactionQueryDto } from './models';
+import { ListTransactionsDto } from './models';
 import { TransactionService } from './transaction.service';
 @ApiTags('transactions')
 @Controller('transactions')
@@ -26,14 +26,15 @@ export class TransactionController {
    */
   @Get()
   @ApiOperation({ summary: 'List transactions' })
-  @ApiQuery({ type: TransactionQueryDto })
-  async getTransactions(
+  @ApiQuery({ type: ListTransactionsDto })
+  async listTransactions(
     @Req() req: Request,
-    @Query() query: TransactionQueryDto
+    @Query() query: ListTransactionsDto
   ): Promise<BasePaginationResultDto<TransactionDto[]>> {
-    return this.transactionService.getTransactions({
+    return this.transactionService.listTransactions({
       ...query,
-      userId: req.user['id'],
+      username: req.user['username'],
+      userAddress: req.user['address'],
     });
   }
 

@@ -26,7 +26,6 @@ import { WalletService } from './wallet.service';
   controllers: [WalletController],
   providers: [
     WalletService,
-    // WalletWithdrawCronService,
     // RedisService,
   ],
   exports: [WalletService],

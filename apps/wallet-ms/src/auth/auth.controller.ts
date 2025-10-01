@@ -1,13 +1,12 @@
 import {
-    Body,
-    Controller,
-    ForbiddenException,
-    Get,
-    Post,
-    Req,
-    Res,
-    UnauthorizedException,
-    UseGuards
+  Body,
+  Controller,
+  Get,
+  Post,
+  Req,
+  Res,
+  UnauthorizedException,
+  UseGuards,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
@@ -15,15 +14,13 @@ import { AuthGuard } from '@nestjs/passport';
 import { ApiBody, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '@pay-wallet/common';
 import {
-    BaseResultDto,
-    LoginRequestDto,
-    LoginResponseDto,
-    LogoutResponseDto,
-    RefreshTokenRequestDto,
-    RefreshTokenResponseDto,
-    RegisterRequestDto,
-    RegisterResponseDto,
-    UserDto,
+  BaseResultDto,
+  LoginRequestDto,
+  LoginResponseDto,
+  LogoutResponseDto,
+  RefreshTokenRequestDto,
+  RefreshTokenResponseDto,
+  UserDto,
 } from '@pay-wallet/domain';
 import { Request, Response } from 'express';
 import { UserService } from '../user/user.service';
@@ -39,20 +36,20 @@ export class AuthController {
     private readonly walletService: WalletService,
     private readonly configService: ConfigService,
     private readonly jwtService: JwtService
-  ) { }
+  ) {}
 
-  @Post('register')
-  async register(
-    @Body() body: RegisterRequestDto
-  ): Promise<BaseResultDto<RegisterResponseDto>> {
-    const isEnableRegister = this.configService.get('guard.isEnableRegister');
-    if (!isEnableRegister) {
-      throw new ForbiddenException('Register is currently disabled!');
-    }
+  // @Post('register')
+  // async register(
+  //   @Body() body: RegisterRequestDto
+  // ): Promise<BaseResultDto<RegisterResponseDto>> {
+  //   const isEnableRegister = this.configService.get('guard.isEnableRegister');
+  //   if (!isEnableRegister) {
+  //     throw new ForbiddenException('Register is currently disabled!');
+  //   }
 
-    const { user } = await this.authService.register(body);
-    return new BaseResultDto({ user }, 'Register successful', true);
-  }
+  //   const { user } = await this.authService.register(body);
+  //   return new BaseResultDto({ user }, 'Register successful', true);
+  // }
 
   @Post('login')
   async login(
@@ -63,7 +60,7 @@ export class AuthController {
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
     }
-    
+
     const { accessToken, refreshToken } = await this.authService.login(user);
     res.cookie('accessToken', accessToken, {
       httpOnly: true,
@@ -90,7 +87,7 @@ export class AuthController {
   @ApiBody({
     type: RefreshTokenRequestDto,
     description: 'Refresh token',
-    required: false
+    required: false,
   })
   async refreshToken(
     @Body() body: RefreshTokenRequestDto,
@@ -152,7 +149,9 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   async checkToken(
     @Req() req: Request
-  ): Promise<BaseResultDto<{ valid: boolean; needsRefresh: boolean; expiresIn: number }>> {
+  ): Promise<
+    BaseResultDto<{ valid: boolean; needsRefresh: boolean; expiresIn: number }>
+  > {
     const authHeader = req.headers.authorization;
     let accessToken = null;
 
@@ -179,7 +178,7 @@ export class AuthController {
         {
           valid: true,
           needsRefresh,
-          expiresIn
+          expiresIn,
         },
         'Token status retrieved',
         true
@@ -221,10 +220,12 @@ export class AuthController {
   @Get('twitter/callback')
   @UseGuards(AuthGuard('twitter'))
   async twitterCallback(@Req() req, @Res() res) {
-    const { accessToken, refreshToken, isCreateMainWallet } =
+    const { accessToken, refreshToken, isCreatedWallet } =
       await this.authService.loginOrCreateTwitterUser(req.user);
 
-    const redirectUrl = `${this.configService.get('guard.frontendUrl')}/auth/twitter/callback?accessToken=${accessToken}&refreshToken=${refreshToken}&isCreateMainWallet=${isCreateMainWallet}`;
+    const redirectUrl = `${this.configService.get(
+      'guard.frontendUrl'
+    )}/auth/twitter/callback?accessToken=${accessToken}&refreshToken=${refreshToken}&isCreatedWallet=${isCreatedWallet}`;
     return res.redirect(redirectUrl);
   }
 }

@@ -7,9 +7,7 @@ import {
   TransactionDto,
   TransactionSchema,
 } from '@pay-wallet/domain';
-import { CreateTransactionEvent, UpdateTransactionEvent } from './models';
 import { TransactionController } from './transaction.controller';
-import { TransactionEventHandler } from './transaction.event.handler';
 import { TransactionService } from './transaction.service';
 
 @Module({
@@ -18,7 +16,7 @@ import { TransactionService } from './transaction.service';
       { name: Transaction.name, schema: TransactionSchema },
     ]),
   ],
-  providers: [TransactionService, TransactionEventHandler],
+  providers: [TransactionService],
   exports: [TransactionService],
   controllers: [TransactionController],
 })
@@ -31,14 +29,6 @@ export class TransactionModule implements OnModuleInit {
     createMap<TransactionDto, TransactionDocument>(
       'TransactionDto',
       'TransactionDocument'
-    );
-    createMap<CreateTransactionEvent, TransactionDto>(
-      'CreateTransactionEvent',
-      'TransactionDto'
-    );
-    createMap<UpdateTransactionEvent, TransactionDto>(
-      'UpdateTransactionEvent',
-      'TransactionDto'
     );
   }
 }

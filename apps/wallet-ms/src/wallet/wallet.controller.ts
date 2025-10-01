@@ -13,7 +13,6 @@ import {
     TransferTokenDto,
     WalletInfoDto,
     WalletMultiSendDto,
-    WithdrawRequestDto,
 } from './models';
 import { WalletService } from './wallet.service';
 @Controller('wallets')
@@ -89,24 +88,24 @@ export class WalletController {
     });
   }
 
-  @Post('withdraw')
-  @ApiOperation({
-    summary: 'Withdraw tokens/native from multiple wallets to a recipient',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Withdrawal jobs queued successfully',
-    type: [String],
-  })
-  async withdraw(
-    @Req() req: Request,
-    @Body() payload: WithdrawRequestDto
-  ): Promise<BaseResultDto<string[]>> {
-    return this.walletService.withdraw({
-      ...payload,
-      userId: req.user['id'],
-    });
-  }
+  // @Post('withdraw')
+  // @ApiOperation({
+  //   summary: 'Withdraw tokens/native from multiple wallets to a recipient',
+  // })
+  // @ApiResponse({
+  //   status: 200,
+  //   description: 'Withdrawal jobs queued successfully',
+  //   type: [String],
+  // })
+  // async withdraw(
+  //   @Req() req: Request,
+  //   @Body() payload: WithdrawRequestDto
+  // ): Promise<BaseResultDto<string[]>> {
+  //   return this.walletService.withdraw({
+  //     ...payload,
+  //     userId: req.user['id'],
+  //   });
+  // }
 
   // @Post('balances')
   // @ApiOperation({

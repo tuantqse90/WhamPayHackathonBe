@@ -113,7 +113,7 @@ export class LoginResponseDto {
   @ApiProperty({
     required: false,
   })
-  isCreateMainWallet?: boolean;
+  isCreatedWallet?: boolean;
 }
 
 export class LogoutResponseDto {

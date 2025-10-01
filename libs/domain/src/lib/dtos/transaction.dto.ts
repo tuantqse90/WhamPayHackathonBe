@@ -9,17 +9,11 @@ export class TransactionDto {
   })
   id: string;
 
-  @ApiProperty({
-    description: 'The chain id of the transaction',
-    example: 1,
-  })
-  chainId: number;
-
-  @ApiProperty({
-    description: 'The account id of the transaction',
-    example: '123456789012345678901234',
-  })
-  userId: string;
+  // @ApiProperty({
+  //   description: 'The account id of the transaction',
+  //   example: '123456789012345678901234',
+  // })
+  // userId: string;
 
   @ApiProperty({
     description: 'The transaction hash of the transaction',
@@ -29,15 +23,27 @@ export class TransactionDto {
 
   @ApiProperty({
     description: 'The from address of the transaction',
+    example: 'abc',
+  })
+  fromUser: string;
+
+  @ApiProperty({
+    description: 'The to address of the transaction',
+    example: 'xyz',
+  })
+  toUser: string;
+
+  @ApiProperty({
+    description: 'The from address of the transaction',
     example: '0x1234567890123456789012345678901234567890',
   })
-  from: string;
+  fromAddress: string;
 
   @ApiProperty({
     description: 'The to address of the transaction',
     example: '0x1234567890123456789012345678901234567890',
   })
-  to: string;
+  toAddress: string;
 
   @ApiProperty({
     description: 'The type of the transaction',

@@ -35,12 +35,6 @@ export class Wallet {
   @Prop({ required: true })
   address: string;
 
-  @Prop({ required: true, default: false })
-  isUsed: false;
-
-  @Prop({ required: false })
-  mmSettingId: string;
-
   @Prop({ required: true, default: WalletType.MAIN, type: String })
   type: WalletType;
 }
