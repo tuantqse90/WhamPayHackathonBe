@@ -1,0 +1,26 @@
+# Source control
+.git
+.gitignore
+
+# Environment files
+.env
+.env.*
+*.env
+
+# Development files
+.editorconfig
+.eslintrc
+.prettierrc
+README.md
+CHANGELOG.md
+docker-compose*.yml
+
+# IDE specific files
+.idea
+.vscode
+*.swp
+*.swo
+
+# OS specific files
+.DS_Store
+Thumbs.db
