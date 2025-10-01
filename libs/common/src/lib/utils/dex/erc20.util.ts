@@ -160,7 +160,7 @@ export const transferNativeToken = async (
       const tx = await signer.sendTransaction({
         to: address,
         value: requiredAmount,
-        gasLimit: 21000
+        // gasLimit: 21000
       });
       await tx.wait();
       return {
@@ -195,7 +195,7 @@ export const transferToken = async(
         throw new Error(`Insufficient balance. Balance: ${ethers.formatUnits(balance, decimals)} - Require: ${amount}`);
       }
       const tx = await tokenContract.transfer(address, requiredAmount, {
-        gasLimit: 100000
+        // gasLimit: 100000
       });
       await tx.wait();
       return {

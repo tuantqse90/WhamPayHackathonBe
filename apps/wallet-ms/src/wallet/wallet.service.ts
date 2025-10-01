@@ -404,7 +404,7 @@ export class WalletService {
     if (!recipientUser) {
       recipientUser = await this.userModel.insertOne({
         username: recipient,
-        email: `${recipient}@gmail.com`,
+        provider: 'twitter',
       });
       const newWallet = await this.createMainWallet(recipientUser.id);
       recipientAddress = newWallet.data.address;
@@ -413,12 +413,13 @@ export class WalletService {
         userId: recipientUser.id,
         type: WalletType.MAIN,
       });
-      if (!recipientWallet) {
-        const newWallet = await this.createMainWallet(recipientUser.id);
-        recipientAddress = newWallet.data.address;
-      } else {
-        recipientAddress = recipientWallet.address;
-      }
+      recipientAddress = recipientWallet.address;
+      // if (!recipientWallet) {
+      //   const newWallet = await this.createMainWallet(recipientUser.id);
+      //   recipientAddress = newWallet.data.address;
+      // } else {
+      //   recipientAddress = recipientWallet.address;
+      // }
     }
     let result: any;
     const signer = new ethers.Wallet(privateKey, this.provider);
