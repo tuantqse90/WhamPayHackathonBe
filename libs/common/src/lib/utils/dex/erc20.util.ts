@@ -162,7 +162,7 @@ export const transferNativeToken = async (
         value: requiredAmount,
         // gasLimit: 21000
       });
-      await tx.wait();
+      // await tx.wait();
       return {
         recipient: address,
         amount: amount,
@@ -197,7 +197,7 @@ export const transferToken = async(
       const tx = await tokenContract.transfer(address, requiredAmount, {
         // gasLimit: 100000
       });
-      await tx.wait();
+      // await tx.wait();
       return {
         recipient: address,
         amount: amount,

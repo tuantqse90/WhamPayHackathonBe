@@ -11,15 +11,24 @@ import { IsEnum, IsOptional } from 'class-validator';
 export class CreateTransactionDto extends TransactionDto {}
 export class UpdateTransactionDto extends TransactionDto {}
 export class ListTransactionsDto extends BaseQueryDto {
+  @ApiProperty({
+    description: 'The username of the user associated with the transaction',
+    required: false,
+  })
   @IsOptional()
   username?: string;
 
+  @ApiProperty({
+    description: 'The wallet address of the user associated with the transaction',
+    required: false,
+  })
   @IsOptional()
   userAddress?: string;
 
   @ApiProperty({
     description: 'The type of the transaction',
     example: TransactionType.DEPOSIT,
+    required: false,
   })
   @IsEnum(TransactionType)
   type?: Omit<
@@ -30,6 +39,7 @@ export class ListTransactionsDto extends BaseQueryDto {
   @ApiProperty({
     description: 'The status of the transaction',
     example: TransactionStatus.PENDING,
+    required: false,
   })
   @IsEnum(TransactionStatus)
   @IsOptional()
@@ -37,7 +47,7 @@ export class ListTransactionsDto extends BaseQueryDto {
 
   @ApiProperty({
     description: 'The from username of the transaction',
-    example: 'abc',
+    required: false,
   })
   @IsOptional()
   fromUsername?: string;
@@ -45,21 +55,21 @@ export class ListTransactionsDto extends BaseQueryDto {
 
   @ApiProperty({
     description: 'The to username of the transaction',
-    example: 'xyz',
+    required: false,
   })
   @IsOptional()
   toUsername?: string;
 
   @ApiProperty({
     description: 'The from address of the transaction',
-    example: '0x1234567890abcdef',
+    required: false,
   })
   @IsOptional()
   fromAddress?: string;
 
   @ApiProperty({
     description: 'The to address of the transaction',
-    example: '0xabcdef1234567890',
+    required: false,
   })
   @IsOptional()
   toAddress?: string;

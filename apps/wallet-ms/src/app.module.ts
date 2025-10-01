@@ -14,6 +14,7 @@ import { HealthModule } from './health/health.module';
 import { TransactionModule } from './transaction/transaction.module';
 import { UserModule } from './user/user.module';
 import { WalletModule } from './wallet/wallet.module';
+import { TokenModule } from './token/token.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { WalletModule } from './wallet/wallet.module';
     AuthModule,
     UserModule,
     HealthModule,
+    TokenModule,
   ],
   controllers: [],
   providers: [],

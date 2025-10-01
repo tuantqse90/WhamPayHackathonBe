@@ -383,7 +383,8 @@ export class WalletService {
   }
 
   async transfer(payload: TransferTokenDto) {
-    const { userId, recipient, tokenAddress, isNative, amount } = payload;
+    const { userId, recipient, address, tokenAddress, isNative, amount } =
+      payload;
     const user = await this.userModel.findOne({
       _id: userId,
     });
@@ -398,28 +399,35 @@ export class WalletService {
       wallet.privateKeySalt
     );
     let recipientAddress: string;
-    let recipientUser = await this.userModel.findOne({
-      username: recipient,
-    });
-    if (!recipientUser) {
-      recipientUser = await this.userModel.insertOne({
-        username: recipient,
-        provider: 'twitter',
+    let recipientUser: UserDocument;
+    if (recipient) {
+      recipientUser = await this.userModel.findOne({
+        username: { $regex: new RegExp(`${recipient}$`, 'i') },
       });
-      const newWallet = await this.createMainWallet(recipientUser.id);
-      recipientAddress = newWallet.data.address;
+      if (!recipientUser) {
+        recipientUser = await this.userModel.insertOne({
+          username: recipient,
+          provider: 'twitter',
+        });
+        const newWallet = await this.createMainWallet(recipientUser.id);
+        recipientAddress = newWallet.data.address;
+      } else {
+        const recipientWallet = await this.walletModel.findOne({
+          userId: recipientUser.id,
+          type: WalletType.MAIN,
+        });
+        recipientAddress = recipientWallet.address;
+      }
     } else {
+      recipientAddress = address;
       const recipientWallet = await this.walletModel.findOne({
-        userId: recipientUser.id,
-        type: WalletType.MAIN,
+        address: recipientAddress.toLowerCase(),
       });
-      recipientAddress = recipientWallet.address;
-      // if (!recipientWallet) {
-      //   const newWallet = await this.createMainWallet(recipientUser.id);
-      //   recipientAddress = newWallet.data.address;
-      // } else {
-      //   recipientAddress = recipientWallet.address;
-      // }
+      if (recipientWallet) {
+        recipientUser = await this.userModel.findOne({
+          _id: recipientWallet.userId,
+        });
+      }
     }
     let result: any;
     const signer = new ethers.Wallet(privateKey, this.provider);
@@ -428,7 +436,7 @@ export class WalletService {
       tokenAddress: isNative ? ZeroAddress : tokenAddress,
       amount: amount,
       fromUser: user.username,
-      toUser: recipientUser.username,
+      toUser: recipientUser ? recipientUser.username : null,
       fromAddress: wallet.address,
       toAddress: recipientAddress,
       type: TransactionType.TRANSFER,

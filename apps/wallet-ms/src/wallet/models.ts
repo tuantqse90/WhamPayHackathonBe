@@ -247,11 +247,19 @@ export class TransferTokenDto {
   userId: string;
 
   @ApiProperty({
-    description: 'The username of the user',
+    description: 'The username of the recipient',
   })
   @IsString()
   @IsOptional()
+  @Transform(({ value }) => value.toLowerCase())
   readonly recipient: string;
+
+  @ApiProperty({
+    description: 'The address of the recipient',
+  })
+  @IsString()
+  @IsOptional()
+  readonly address: string;
 
   @ApiProperty({
     description: 'The chain id',
@@ -276,6 +284,7 @@ export class TransferTokenDto {
   @IsString()
   @IsOptional()
   @Transform(({ value }) => value.toLowerCase())
+
   readonly tokenAddress: string;
 
   @ApiProperty({

@@ -21,6 +21,8 @@ import {
   RefreshTokenRequestDto,
   RefreshTokenResponseDto,
   UserDto,
+  MobileTwitterLoginDto,
+  TwitterLoginDto,
 } from '@pay-wallet/domain';
 import { Request, Response } from 'express';
 import { UserService } from '../user/user.service';
@@ -227,5 +229,47 @@ export class AuthController {
       'guard.frontendUrl'
     )}/auth/twitter/callback?accessToken=${accessToken}&refreshToken=${refreshToken}&isCreatedWallet=${isCreatedWallet}`;
     return res.redirect(redirectUrl);
+  }
+
+  @Post('twitter/mobile')
+  async mobileTwitterLogin(
+    @Body() body: MobileTwitterLoginDto
+  ): Promise<BaseResultDto<LoginResponseDto>> {
+    try {
+      // Verify Twitter access token and get user data
+      const userResponse = await fetch('https://api.twitter.com/2/users/me?user.fields=profile_image_url,public_metrics,verified', {
+        headers: {
+          'Authorization': `Bearer ${body.twitterAccessToken}`,
+        },
+      });
+
+      if (!userResponse.ok) {
+        throw new UnauthorizedException('Invalid Twitter access token');
+      }
+
+      const twitterUserData = await userResponse.json();
+      const user = twitterUserData.data;
+
+      // Create TwitterLoginDto from Twitter API response
+      const twitterLoginDto: TwitterLoginDto = {
+        twitterId: user.id,
+        username: user.username,
+        name: user.name,
+        email: user.email || `${user.id}@twitter.whampay.com`,
+        provider: 'twitter',
+      };
+
+      // Login or create user
+      const loginResult = await this.authService.loginOrCreateTwitterUser(twitterLoginDto);
+
+      return new BaseResultDto(
+        loginResult,
+        loginResult.isCreatedWallet ? 'Account created and logged in successfully' : 'Login successful',
+        true
+      );
+    } catch (error) {
+      console.error('Mobile Twitter login error:', error);
+      throw new UnauthorizedException('Twitter authentication failed');
+    }
   }
 }

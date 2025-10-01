@@ -7,6 +7,7 @@ import {
   IsString,
 } from 'class-validator';
 import { UserRole } from '../enums';
+import { Transform } from 'class-transformer';
 export class UserDto {
   @ApiProperty({ description: 'User ID', required: false })
   id?: string;
@@ -142,14 +143,28 @@ export class TwitterLoginDto {
   twitterId: string;
 
   @ApiProperty({ description: 'Twitter username' })
+  @Transform(({ value }) => value.toLowerCase())
   username: string;
 
   @ApiProperty({ description: 'Twitter display name' })
   name: string;
 
   @ApiProperty({ description: 'Twitter email address', required: false })
+  @Transform(({ value }) => value?.toLowerCase())
   email?: string;
 
   @ApiProperty({ description: 'Provider (should be "twitter")', required: false })
   provider?: string;
+}
+
+export class MobileTwitterLoginDto {
+  @ApiProperty({ description: 'Twitter access token from mobile OAuth' })
+  @IsString()
+  @IsNotEmpty()
+  twitterAccessToken: string;
+
+  @ApiProperty({ description: 'Device info for tracking', required: false })
+  @IsOptional()
+  @IsString()
+  deviceInfo?: string;
 }
