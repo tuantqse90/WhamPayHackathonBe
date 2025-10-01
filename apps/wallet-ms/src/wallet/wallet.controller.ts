@@ -1,18 +1,21 @@
 import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
 import {
-    ApiBearerAuth,
-    ApiOperation,
-    ApiResponse,
-    ApiTags,
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '@pay-wallet/common';
 import { BaseResultDto } from '@pay-wallet/domain';
 import { Request } from 'express';
 import {
-    SendTokenResponseDto,
-    TransferTokenDto,
-    WalletInfoDto,
-    WalletMultiSendDto,
+  NFTTransferResponseDto,
+  SendTokenResponseDto,
+  TransferNFT1155Dto,
+  TransferNFT721Dto,
+  TransferTokenDto,
+  WalletInfoDto,
+  WalletMultiSendDto,
 } from './models';
 import { WalletService } from './wallet.service';
 @Controller('wallets')
@@ -28,9 +31,7 @@ export class WalletController {
     status: 200,
     description: 'Wallet created successfully',
   })
-  createMainWallet(
-    @Req() req: Request
-  ): Promise<BaseResultDto<WalletInfoDto>> {
+  createMainWallet(@Req() req: Request): Promise<BaseResultDto<WalletInfoDto>> {
     return this.walletService.createMainWallet(req.user['id']);
   }
 
@@ -42,9 +43,7 @@ export class WalletController {
     status: 200,
     description: 'Exported wallet',
   })
-  exportMainWallet(
-    @Req() req: Request
-  ): Promise<BaseResultDto<WalletInfoDto>> {
+  exportMainWallet(@Req() req: Request): Promise<BaseResultDto<WalletInfoDto>> {
     return this.walletService.exportMainWallet(req.user['id']);
   }
 
@@ -70,8 +69,7 @@ export class WalletController {
 
   @Post('transfer')
   @ApiOperation({
-    summary:
-      "Transfer token to a username",
+    summary: 'Transfer token to a username',
   })
   @ApiResponse({
     status: 200,
@@ -88,38 +86,41 @@ export class WalletController {
     });
   }
 
-  // @Post('withdraw')
-  // @ApiOperation({
-  //   summary: 'Withdraw tokens/native from multiple wallets to a recipient',
-  // })
-  // @ApiResponse({
-  //   status: 200,
-  //   description: 'Withdrawal jobs queued successfully',
-  //   type: [String],
-  // })
-  // async withdraw(
-  //   @Req() req: Request,
-  //   @Body() payload: WithdrawRequestDto
-  // ): Promise<BaseResultDto<string[]>> {
-  //   return this.walletService.withdraw({
-  //     ...payload,
-  //     userId: req.user['id'],
-  //   });
-  // }
+  @Post('transfer-nft-721')
+  @ApiOperation({
+    summary: 'Transfer ERC721 NFT to a username or address',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'NFT721 transfer executed',
+    type: NFTTransferResponseDto,
+  })
+  transferNFT721(
+    @Req() req: Request,
+    @Body() payload: TransferNFT721Dto
+  ): Promise<BaseResultDto<NFTTransferResponseDto>> {
+    return this.walletService.transferNFT721({
+      ...payload,
+      userId: req.user['id'],
+    });
+  }
 
-  // @Post('balances')
-  // @ApiOperation({
-  //   summary: 'Get balance of wallet',
-  // })
-  // @ApiResponse({
-  //   status: 200,
-  //   description: 'Exported wallet',
-  // })
-  // getUserWallet(@Body() payload: any) {
-  //   return this.walletService.getBalances(
-  //     payload.addresses,
-  //     payload.tokenAddress,
-  //     payload.isNative
-  //   );
-  // }
+  @Post('transfer-nft-1155')
+  @ApiOperation({
+    summary: 'Transfer ERC1155 NFT to a username or address',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'NFT1155 transfer executed',
+    type: NFTTransferResponseDto,
+  })
+  transferNFT1155(
+    @Req() req: Request,
+    @Body() payload: TransferNFT1155Dto
+  ): Promise<BaseResultDto<NFTTransferResponseDto>> {
+    return this.walletService.transferNFT1155({
+      ...payload,
+      userId: req.user['id'],
+    });
+  }
 }

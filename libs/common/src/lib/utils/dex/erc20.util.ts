@@ -181,36 +181,36 @@ export const transferNativeToken = async (
   }
 
 export const transferToken = async(
-    signer: ethers.Wallet,
-    tokenAddress: string,
-    address: string,
-    amount: string
-  ) => {
-    try {
-      const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, signer);
-      const decimals = await tokenContract.decimals().catch(() => 18);
-      const balance = await tokenContract.balanceOf(signer.address);
-      const requiredAmount = ethers.parseUnits(amount, decimals);
-      if (balance < requiredAmount) {
-        throw new Error(`Insufficient balance. Balance: ${ethers.formatUnits(balance, decimals)} - Require: ${amount}`);
-      }
-      const tx = await tokenContract.transfer(address, requiredAmount, {
-        // gasLimit: 100000
-      });
-      // await tx.wait();
-      return {
-        recipient: address,
-        amount: amount,
-        txHash: tx.hash,
-        success: true
-      };
-    } catch (error: any) {
-      return {
-        recipient: address,
-        amount: amount,
-        txHash: '',
-        success: false,
-        error: error.message
-      };
+  signer: ethers.Wallet,
+  tokenAddress: string,
+  address: string,
+  amount: string
+) => {
+  try {
+    const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, signer);
+    const decimals = await tokenContract.decimals().catch(() => 18);
+    const balance = await tokenContract.balanceOf(signer.address);
+    const requiredAmount = ethers.parseUnits(amount, decimals);
+    if (balance < requiredAmount) {
+      throw new Error(`Insufficient balance. Balance: ${ethers.formatUnits(balance, decimals)} - Require: ${amount}`);
     }
+    const tx = await tokenContract.transfer(address, requiredAmount, {
+      // gasLimit: 100000
+    });
+    // await tx.wait();
+    return {
+      recipient: address,
+      amount: amount,
+      txHash: tx.hash,
+      success: true
+    };
+  } catch (error: any) {
+    return {
+      recipient: address,
+      amount: amount,
+      txHash: '',
+      success: false,
+      error: error.message
+    };
   }
+}

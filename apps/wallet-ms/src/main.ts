@@ -31,20 +31,22 @@ async function bootstrap() {
     )
     .addServer('http://localhost:3000', 'Local')
     // .addServer('https://m3d-h6n-api.dev101.cloud/api/', 'Devnet')
-    .addServer(process.env.HOST_URL, 'Dev')
+    .addServer('https://whp-api.dessistant.xyz/', 'Dev')
     .build();
-  if (process.env.ENABLE_SWAGGER == 'true') {
-    const document = SwaggerModule.createDocument(app, config);
-    SwaggerModule.setup('docs', app, document);
-  }
+  // if (process.env.ENABLE_SWAGGER == 'true') {
+  //   const document = SwaggerModule.createDocument(app, config);
+  //   SwaggerModule.setup('docs', app, document);
+  // }
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('docs', app, document);
 
   // setup cors
   app.enableCors({
     origin: [
       /^http:\/\/localhost(:[0-9]+)?$/,
       'http://localhost:8080',
-      'http://dessistant.xyz',
-      'https://dessistant.xyz',
+      'https://whp-api.dessistant.xyz/',
+      'http://whp-api.dessistant.xyz/',
       /^https?:\/\/([a-z0-9]+\.)?dessistant\.xyz$/,
       'http://dessisstant-fe.onrender.com',
       'https://dessisstant-fe.onrender.com',

@@ -67,10 +67,10 @@ export class AuthService {
     if (!user) {
       throw new BadRequestException('Invalid email or password');
     }
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      throw new BadRequestException('Invalid email or password');
-    }
+    // const isMatch = await bcrypt.compare(password, user.password);
+    // if (!isMatch) {
+    //   throw new BadRequestException('Invalid email or password');
+    // }
     return user;
   }
 

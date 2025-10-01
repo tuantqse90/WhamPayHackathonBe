@@ -1,50 +1,172 @@
+# Pay Wallet - Digital Wallet & NFT Management Platform
 
-These targets are either [inferred automatically](https://nx.dev/concepts/inferred-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) or defined in the `project.json` or `package.json` files.
+## 📋 Table of Contents
 
-[More about running tasks in the docs &raquo;](https://nx.dev/features/run-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+- [Overview](#overview)
+- [Architecture](#architecture)
+- [Getting Started](#getting-started)
+- [API Documentation](#api-documentation)
+- [Modules](#modules)
+- [Database Schema](#database-schema)
+- [Smart Contract Integration](#smart-contract-integration)
+- [Development Guide](#development-guide)
+- [Deployment](#deployment)
 
-## Add new projects
+## 🌟 Overview
 
-While you could add new projects to your workspace manually, you might want to leverage [Nx plugins](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) and their [code generation](https://nx.dev/features/generate-code?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) feature.
+Pay Wallet is a comprehensive digital wallet and NFT management platform built with NestJS and MongoDB. It provides secure wallet management, token transfers, NFT handling, social features, and blockchain integration.
 
-Use the plugin's generator to create new projects.
+### Key Features
 
-To generate a new application, use:
+- 🔐 **Secure Wallet Management** - Create and manage cryptocurrency wallets
+- 💰 **Token Transfers** - Support for ERC20, ERC721, and ERC1155 tokens
+- 🎨 **NFT Management** - Complete NFT lifecycle management
+- 👥 **Social Features** - Friend system with requests, blocking, and social interactions
+- 🔑 **Authentication** - JWT-based auth with Twitter OAuth integration
+- 🌐 **Multi-chain Support** - Support for multiple blockchain networks
+- 📊 **Transaction History** - Complete transaction tracking and analytics
 
-```sh
-npx nx g @nx/node:app demo
+## 🏗️ Architecture
+
+The project follows a modular Nx monorepo structure:
+
+```
+pay-wallet/
+├── apps/
+│   └── wallet-ms/              # Main wallet microservice
+├── libs/
+│   ├── domain/                 # Shared domain entities and DTOs
+│   └── common/                 # Shared utilities and constants
+└── scripts/                    # Deployment and utility scripts
 ```
 
-To generate a new library, use:
+### Technology Stack
 
-```sh
-npx nx g @nx/node:lib mylib
+- **Backend**: NestJS, TypeScript
+- **Database**: MongoDB with Mongoose
+- **Authentication**: JWT, Passport
+- **Blockchain**: ethers.js, Web3
+- **Documentation**: Swagger/OpenAPI
+- **Deployment**: Docker, Kubernetes
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Node.js 18+
+- Yarn package manager
+- MongoDB
+- Redis (for caching)
+
+### Installation
+
+```bash
+# Clone the repository
+git clone <repository-url>
+cd pay-wallet
+
+# Install dependencies
+yarn install
+
+# Set up environment variables
+cp .env.example .env
+# Edit .env with your configuration
+
+# Start the development server
+nx serve wallet-ms
 ```
 
-You can use `npx nx list` to get a list of installed plugins. Then, run `npx nx list <plugin-name>` to learn about more specific capabilities of a particular plugin. Alternatively, [install Nx Console](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) to browse plugins and generators in your IDE.
+### Environment Variables
 
-[Learn more about Nx plugins &raquo;](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) | [Browse the plugin registry &raquo;](https://nx.dev/plugin-registry?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+```env
+# Database
+MONGODB_URI=mongodb://localhost:27017/pay-wallet
+MONGODB_DATABASE=pay-wallet
 
+# Redis
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_URI=redis://localhost:6379
 
-[Learn more about Nx on CI](https://nx.dev/ci/intro/ci-with-nx#ready-get-started-with-your-provider?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+# JWT
+JWT_SECRET=your-jwt-secret
+COOKIE_DOMAIN=localhost
 
-## Install Nx Console
+# Blockchain
+RPC_URL=https://mainnet.base.org
+PRIVATE_KEY=your-private-key
 
-Nx Console is an editor extension that enriches your developer experience. It lets you run tasks, generate code, and improves code autocompletion in your IDE. It is available for VSCode and IntelliJ.
+# API
+API_KEY=your-api-key
+HOST_URL=http://localhost:3000
+FRONTEND_URL=http://localhost:4200
 
-[Install Nx Console &raquo;](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+# Features
+ENABLE_REGISTER=true
+ENABLE_SWAGGER=true
+NODE_ENV=development
+```
 
-## Useful links
+## 📚 API Documentation
 
-Learn more:
+### Base URL
+```
+http://localhost:3000/api
+```
 
-- [Learn more about this workspace setup](https://nx.dev/nx-api/node?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects)
-- [Learn about Nx on CI](https://nx.dev/ci/intro/ci-with-nx?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Releasing Packages with Nx release](https://nx.dev/features/manage-releases?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [What are Nx plugins?](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+### Authentication
+All endpoints require JWT authentication unless specified otherwise.
 
-And join the Nx community:
-- [Discord](https://go.nx.dev/community)
-- [Follow us on X](https://twitter.com/nxdevtools) or [LinkedIn](https://www.linkedin.com/company/nrwl)
-- [Our Youtube channel](https://www.youtube.com/@nxdevtools)
-- [Our blog](https://nx.dev/blog?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+```bash
+Authorization: Bearer <jwt-token>
+```
+
+### Core Endpoints
+
+#### Authentication
+- `POST /auth/login` - User login
+- `POST /auth/register` - User registration
+- `POST /auth/refresh` - Refresh access token
+- `POST /auth/twitter` - Twitter OAuth login
+
+#### Wallet Management
+- `GET /wallets` - Get user wallets
+- `POST /wallets/create` - Create new wallet
+- `POST /wallets/transfer` - Transfer tokens
+- `POST /wallets/transfer-nft-721` - Transfer ERC721 NFTs
+- `POST /wallets/transfer-nft-1155` - Transfer ERC1155 NFTs
+
+#### NFT Management
+- `GET /nft` - List NFTs with filters
+- `GET /nft/:id` - Get NFT details
+- `POST /nft` - Create NFT record
+- `PUT /nft/:id` - Update NFT
+- `GET /nft/collections` - Get collections
+
+#### Social Features
+- `POST /friendship/request` - Send friend request
+- `PUT /friendship/respond` - Accept/reject friend request
+- `GET /friendship/friends` - List friends
+- `GET /friendship/not-friends` - Get users not in friend list
+- `POST /friendship/block` - Block user
+
+#### Transactions
+- `GET /transactions` - Get transaction history
+- `GET /transactions/:id` - Get transaction details
+
+## 🔧 Modules
+
+### 1. Wallet Module (`apps/wallet-ms/src/wallet/`)
+
+Handles wallet creation, management, and token transfers.
+
+**Key Features:**
+- Wallet creation and encryption
+- Token balance checking
+- ERC20/ERC721/ERC1155 transfers
+- Multi-chain support
+
+**Main Files:**
+- `wallet.service.ts` - Core wallet operations
+- `wallet.controller.ts` - API endpoints
+- `wallet.module.ts

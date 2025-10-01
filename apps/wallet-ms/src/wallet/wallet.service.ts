@@ -3,17 +3,21 @@ import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
 import {
   batchBalancesOf,
+  checkNFT721Ownership,
   decrypt,
   defaultProvider,
   encrypt,
   ERC20_ABI,
   generateKey,
+  getNFT1155Balance,
   mapArray,
   mapObject,
   MULTISEND_ABI,
   MULTISEND_ADDRESS,
   transferNativeToken,
-  transferToken
+  transferNFT1155,
+  transferNFT721,
+  transferToken,
 } from '@pay-wallet/common';
 import {
   BaseResultDto,
@@ -30,8 +34,11 @@ import {
 import { ethers, isAddress, Wallet, ZeroAddress } from 'ethers';
 import { Model } from 'mongoose';
 import {
+  NFTTransferResponseDto,
   SendTokenResponseDto,
   SendTokensDto,
+  TransferNFT1155Dto,
+  TransferNFT721Dto,
   TransferTokenDto,
   WalletInfoDto,
   WalletMultiSendDto,
@@ -515,5 +522,232 @@ export class WalletService {
       address: balance.address,
       balance: balance.balance.toString(),
     }));
+  }
+
+  async transferNFT721(
+    payload: TransferNFT721Dto
+  ): Promise<BaseResultDto<NFTTransferResponseDto>> {
+    const { userId, recipient, address, nftAddress, tokenId } = payload;
+    const user = await this.userModel.findOne({
+      _id: userId,
+    });
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    const wallet = await this.walletModel.findOne({
+      userId: userId,
+      type: WalletType.MAIN,
+    });
+    if (!wallet) {
+      throw new BadRequestException('Wallet not found');
+    }
+
+    const privateKey = decrypt(
+      wallet.encryptedPrivateKey,
+      wallet.privateKeySalt
+    );
+
+    let recipientAddress: string;
+    let recipientUser: UserDocument | null = null;
+
+    if (recipient) {
+      recipientUser = await this.userModel.findOne({
+        username: recipient.toLowerCase(),
+      });
+      if (!recipientUser) {
+        throw new BadRequestException('Recipient user not found');
+      }
+      const recipientWallet = await this.walletModel.findOne({
+        userId: recipientUser.id,
+        type: WalletType.MAIN,
+      });
+      if (!recipientWallet) {
+        throw new BadRequestException('Recipient wallet not found');
+      }
+      recipientAddress = recipientWallet.address;
+    } else if (address) {
+      recipientAddress = address;
+      const recipientWallet = await this.walletModel.findOne({
+        address: recipientAddress.toLowerCase(),
+      });
+      if (recipientWallet) {
+        recipientUser = await this.userModel.findOne({
+          _id: recipientWallet.userId,
+        });
+      }
+    } else {
+      throw new BadRequestException(
+        'Either recipient username or address must be provided'
+      );
+    }
+
+    const ownsNFT = await checkNFT721Ownership(
+      this.provider,
+      nftAddress,
+      wallet.address,
+      tokenId
+    );
+    if (!ownsNFT) {
+      throw new BadRequestException(`You don't own NFT token ID ${tokenId}`);
+    }
+
+    const signer = new ethers.Wallet(privateKey, this.provider);
+    const transaction = new this.transactionModel({
+      txHash: '',
+      tokenAddress: nftAddress,
+      amount: 1,
+      fromUser: user.username,
+      toUser: recipientUser ? recipientUser.username : null,
+      fromAddress: wallet.address,
+      toAddress: recipientAddress,
+      type: TransactionType.TRANSFER_721,
+      status: TransactionStatus.PENDING,
+    });
+
+    const result = await transferNFT721(
+      signer,
+      nftAddress,
+      recipientAddress,
+      tokenId
+    );
+
+    if (result.success) {
+      transaction.txHash = result.txHash;
+      transaction.status = TransactionStatus.COMPLETED;
+    } else {
+      transaction.status = TransactionStatus.FAILED;
+    }
+    await transaction.save();
+
+    const response: NFTTransferResponseDto = {
+      transactionHash: result.txHash || '',
+      nftAddress,
+      tokenId,
+      recipient: recipientAddress,
+      status: result.success ? 'success' : 'failed',
+      error: result.error,
+    };
+
+    return new BaseResultDto<NFTTransferResponseDto>(
+      response,
+      result.success ? 'NFT transfer successful' : 'NFT transfer failed',
+      result.success
+    );
+  }
+
+  async transferNFT1155(
+    payload: TransferNFT1155Dto
+  ): Promise<BaseResultDto<NFTTransferResponseDto>> {
+    const { userId, recipient, address, nftAddress, tokenId, amount, data } =
+      payload;
+    const user = await this.userModel.findOne({
+      _id: userId,
+    });
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+    const wallet = await this.walletModel.findOne({
+      userId: userId,
+      type: WalletType.MAIN,
+    });
+    if (!wallet) {
+      throw new BadRequestException('Wallet not found');
+    }
+
+    const privateKey = decrypt(
+      wallet.encryptedPrivateKey,
+      wallet.privateKeySalt
+    );
+
+    let recipientAddress: string;
+    let recipientUser: UserDocument | null = null;
+    if (recipient) {
+      recipientUser = await this.userModel.findOne({
+        username: recipient.toLowerCase(),
+      });
+      if (!recipientUser) {
+        throw new BadRequestException('Recipient user not found');
+      }
+      const recipientWallet = await this.walletModel.findOne({
+        userId: recipientUser.id,
+        type: WalletType.MAIN,
+      });
+      if (!recipientWallet) {
+        throw new BadRequestException('Recipient wallet not found');
+      }
+      recipientAddress = recipientWallet.address;
+    } else if (address) {
+      recipientAddress = address;
+      const recipientWallet = await this.walletModel.findOne({
+        address: recipientAddress.toLowerCase(),
+      });
+      if (recipientWallet) {
+        recipientUser = await this.userModel.findOne({
+          _id: recipientWallet.userId,
+        });
+      }
+    } else {
+      throw new BadRequestException(
+        'Either recipient username or address must be provided'
+      );
+    }
+
+    const balance = await getNFT1155Balance(
+      this.provider,
+      nftAddress,
+      wallet.address,
+      tokenId
+    );
+    if (balance < amount) {
+      throw new BadRequestException(
+        `Insufficient NFT balance. Balance: ${balance} - Required: ${amount}`
+      );
+    }
+
+    const signer = new ethers.Wallet(privateKey, this.provider);
+    const transaction = new this.transactionModel({
+      txHash: '',
+      tokenAddress: nftAddress,
+      amount: amount,
+      fromUser: user.username,
+      toUser: recipientUser ? recipientUser.username : null,
+      fromAddress: wallet.address,
+      toAddress: recipientAddress,
+      type: TransactionType.TRANSFER_1155,
+      status: TransactionStatus.PENDING,
+    });
+
+    const result = await transferNFT1155(
+      signer,
+      nftAddress,
+      recipientAddress,
+      tokenId,
+      amount,
+      data || '0x'
+    );
+    if (result.success) {
+      transaction.txHash = result.txHash;
+      transaction.status = TransactionStatus.COMPLETED;
+    } else {
+      transaction.status = TransactionStatus.FAILED;
+    }
+    await transaction.save();
+
+    const response: NFTTransferResponseDto = {
+      transactionHash: result.txHash || '',
+      nftAddress,
+      tokenId,
+      amount,
+      recipient: recipientAddress,
+      status: result.success ? 'success' : 'failed',
+      error: result.error,
+    };
+
+    return new BaseResultDto<NFTTransferResponseDto>(
+      response,
+      result.success ? 'NFT transfer successful' : 'NFT transfer failed',
+      result.success
+    );
   }
 }

@@ -2,15 +2,15 @@ import { ApiProperty } from '@nestjs/swagger';
 import { WalletType } from '@pay-wallet/domain';
 import { Transform, Type } from 'class-transformer';
 import {
-    ArrayMinSize,
-    ArrayNotEmpty,
-    IsArray,
-    IsBoolean,
-    IsEnum,
-    IsNotEmpty,
-    IsNumber,
-    IsOptional,
-    IsString,
+  ArrayMinSize,
+  ArrayNotEmpty,
+  IsArray,
+  IsBoolean,
+  IsEnum,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
 } from 'class-validator';
 
 export class WalletInfoDto {
@@ -242,7 +242,6 @@ export class SendTokenResponseDto {
   status: 'success' | 'failed';
 }
 
-
 export class TransferTokenDto {
   userId: string;
 
@@ -268,7 +267,6 @@ export class TransferTokenDto {
   @Type(() => Number)
   readonly chainId: number = 8453;
 
-
   @ApiProperty({
     description: 'Token native',
     default: false,
@@ -284,7 +282,6 @@ export class TransferTokenDto {
   @IsString()
   @IsOptional()
   @Transform(({ value }) => value.toLowerCase())
-
   readonly tokenAddress: string;
 
   @ApiProperty({
@@ -293,4 +290,137 @@ export class TransferTokenDto {
   @IsNotEmpty()
   @Type(() => Number)
   readonly amount: number;
+}
+
+export class TransferNFT721Dto {
+  userId: string;
+
+  @ApiProperty({
+    description: 'The username of the recipient',
+  })
+  @IsString()
+  @IsOptional()
+  @Transform(({ value }) => value.toLowerCase())
+  readonly recipient?: string;
+
+  @ApiProperty({
+    description: 'The address of the recipient',
+  })
+  @IsString()
+  @IsOptional()
+  readonly address?: string;
+
+  @ApiProperty({
+    description: 'The chain id',
+  })
+  @IsOptional()
+  @Type(() => Number)
+  readonly chainId: number = 8453;
+
+  @ApiProperty({
+    description: 'The address of the NFT contract',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Transform(({ value }) => value.toLowerCase())
+  readonly nftAddress: string;
+
+  @ApiProperty({
+    description: 'The token ID of the NFT',
+  })
+  @IsNotEmpty()
+  @Type(() => Number)
+  readonly tokenId: number;
+}
+
+export class TransferNFT1155Dto {
+  userId: string;
+
+  @ApiProperty({
+    description: 'The username of the recipient',
+  })
+  @IsString()
+  @IsOptional()
+  @Transform(({ value }) => value.toLowerCase())
+  readonly recipient?: string;
+
+  @ApiProperty({
+    description: 'The address of the recipient',
+  })
+  @IsString()
+  @IsOptional()
+  readonly address?: string;
+
+  @ApiProperty({
+    description: 'The chain id',
+  })
+  @IsOptional()
+  @Type(() => Number)
+  readonly chainId: number = 8453;
+
+  @ApiProperty({
+    description: 'The address of the NFT contract',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Transform(({ value }) => value.toLowerCase())
+  readonly nftAddress: string;
+
+  @ApiProperty({
+    description: 'The token ID of the NFT',
+  })
+  @IsNotEmpty()
+  @Type(() => Number)
+  readonly tokenId: number;
+
+  @ApiProperty({
+    description: 'The amount of tokens to transfer',
+  })
+  @IsNotEmpty()
+  @Type(() => Number)
+  readonly amount: number;
+
+  @ApiProperty({
+    description: 'Additional data to pass with the transfer',
+  })
+  @IsString()
+  @IsOptional()
+  readonly data?: string = '0x';
+}
+
+export class NFTTransferResponseDto {
+  @ApiProperty({
+    description: 'The transaction hash of the NFT transfer',
+  })
+  transactionHash: string;
+
+  @ApiProperty({
+    description: 'The NFT contract address',
+  })
+  nftAddress: string;
+
+  @ApiProperty({
+    description: 'The token ID transferred',
+  })
+  tokenId: number;
+
+  @ApiProperty({
+    description: 'The amount transferred (for ERC1155)',
+  })
+  amount?: number;
+
+  @ApiProperty({
+    description: 'The recipient address',
+  })
+  recipient: string;
+
+  @ApiProperty({
+    description: 'Transaction status',
+  })
+  status: 'success' | 'failed';
+
+  @ApiProperty({
+    description: 'Error message if failed',
+  })
+  error?: string;
 }

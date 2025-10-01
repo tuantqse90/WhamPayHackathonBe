@@ -90,16 +90,16 @@ export class TransactionService {
 
     if (query.type) filter.type = query.type;
     if (query.status) filter.status = query.status;
-    if (query.fromUsername) filter.fromUsername = query.fromUsername;
-    if (query.toUsername) filter.toUsername = query.toUsername;
-    if (query.fromAddress) filter.from = query.fromAddress;
-    if (query.toAddress) filter.to = query.toAddress;
+    if (query.fromUsername) filter.fromUser = query.fromUsername;
+    if (query.toUsername) filter.toUser = query.toUsername;
+    if (query.fromAddress) filter.fromAddress = query.fromAddress;
+    if (query.toAddress) filter.toAddress = query.toAddress;
 
     const orConditions = [];    
     if (query.username) {
       orConditions.push(
-        { fromUsername: query.username },
-        { toUsername: query.username }
+        { fromUser: query.username },
+        { toUser: query.username }
       );
     }
     if (query.search) {
@@ -119,7 +119,6 @@ export class TransactionService {
       sortOptions[query.orderBy] = query.desc ? -1 : 1;
     }
     const total = await this.transactionModel.countDocuments(filter);
-
     const transactions = await this.transactionModel
       .find(filter)
       .sort(sortOptions)
@@ -127,7 +126,7 @@ export class TransactionService {
       .limit(limit)
       .lean()
       .exec();
-
+    console.log('transactions:', transactions);
     return new BasePaginationResultDto(
       mapArray<TransactionDocument, TransactionDto>(
         'TransactionDocument',
