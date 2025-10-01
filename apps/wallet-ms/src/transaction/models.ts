@@ -33,7 +33,7 @@ export class ListTransactionsDto extends BaseQueryDto {
   @IsEnum(TransactionType)
   type?: Omit<
     TransactionType,
-    'deposit' | 'withdraw' | 'transfer'
+    'deposit' | 'withdraw' | 'transfer' | 'transfer_721' | 'transfer_1155'
   >;
 
   @ApiProperty({

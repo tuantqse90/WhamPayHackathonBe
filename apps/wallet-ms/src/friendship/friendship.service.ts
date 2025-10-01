@@ -1,26 +1,26 @@
 import {
-	BadRequestException,
-	ConflictException,
-	Injectable,
-	NotFoundException,
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { mapArray, mapObject } from '@pay-wallet/common';
 import {
-	BasePaginationResultDto,
-	Friendship,
-	FriendshipDocument,
-	FriendshipDto,
-	FriendshipStatus,
-	User,
-	UserDocument,
-	UserSummaryDto,
+  BasePaginationResultDto,
+  Friendship,
+  FriendshipDocument,
+  FriendshipDto,
+  FriendshipStatus,
+  User,
+  UserDocument,
+  UserSummaryDto,
 } from '@pay-wallet/domain';
 import { Model, Types } from 'mongoose';
 import {
-	ListFriendsDto,
-	RespondToFriendRequestDto,
-	SendFriendRequestDto,
+  ListFriendsDto,
+  RespondToFriendRequestDto,
+  SendFriendRequestDto,
 } from './ models';
 
 @Injectable()
@@ -136,7 +136,7 @@ export class FriendshipService {
   async getFriends(
     userId: string,
     listFriendsDto: ListFriendsDto
-  ): Promise<BasePaginationResultDto<FriendshipDto[]>> {
+  ): Promise<BasePaginationResultDto<UserSummaryDto[]>> {
     const {
       status = FriendshipStatus.ACCEPTED,
       search,
@@ -172,13 +172,50 @@ export class FriendshipService {
       .limit(size)
       .lean();
 
-    const friendshipDtos = mapArray<FriendshipDocument, FriendshipDto>(
-      'FriendshipDocument',
-      'FriendshipDto',
-      friendships
-    );
+    const relatedUserIds = new Set<string>();
+    friendships.forEach((friendship) => {
+      if (friendship.requesterId.toString() !== userId) {
+        relatedUserIds.add(friendship.requesterId.toString());
+      }
+      if (friendship.responserId.toString() !== userId) {
+        relatedUserIds.add(friendship.responserId.toString());
+      }
+    });
+    // relatedUserIds.add(userId);
+    const userQuery: Record<string, unknown> = {
+      _id: {
+        $in: Array.from(relatedUserIds).map((id) => new Types.ObjectId(id)),
+      },
+    };
+    if (search && search.trim()) {
+      userQuery.$or = [
+        { username: { $regex: search.trim(), $options: 'i' } },
+        { name: { $regex: search.trim(), $options: 'i' } },
+        { email: { $regex: search.trim(), $options: 'i' } },
+      ];
+    }
+    const users = await this.userModel
+      .find(userQuery, { username: 1, name: 1, email: 1, createdAt: 1 })
+      .sort({ username: 1 })
+      .skip(skip)
+      .limit(size)
+      .lean();
 
-    return new BasePaginationResultDto(friendshipDtos, total, page, size);
+    const userSummaries = users.map((user) => ({
+      id: user._id.toString(),
+      username: user.username,
+      name: user.name,
+      email: user.email,
+    }));
+
+    return new BasePaginationResultDto(userSummaries, total, page, size);
+    // const friendshipDtos = mapArray<FriendshipDocument, FriendshipDto>(
+    //   'FriendshipDocument',
+    //   'FriendshipDto',
+    //   friendships
+    // );
+
+    // return new BasePaginationResultDto(friendshipDtos, total, page, size);
   }
 
   async getPendingRequests(
@@ -193,7 +230,6 @@ export class FriendshipService {
       status: FriendshipStatus.PENDING,
     };
     const total = await this.friendshipModel.countDocuments(filter);
-		console.log('filter:', filter);
     const friendships = await this.friendshipModel
       .find(filter)
       .sort({ createdAt: -1 })
@@ -210,27 +246,42 @@ export class FriendshipService {
     return new BasePaginationResultDto(friendshipDtos, total, page, size);
   }
 
-  async removeFriend(userId: string, friendUsername: string): Promise<void> {
-    const friend = await this.userModel.findOne({
-      username: friendUsername.toLowerCase(),
-    });
-    if (!friend) {
-      throw new NotFoundException('User not found');
+  async removeFriend(
+    userId: string,
+    friendUsername: string
+  ): Promise<{ success: boolean; message?: string; error?: string }> {
+    try {
+      const friend = await this.userModel.findOne({
+        username: friendUsername.toLowerCase(),
+      });
+      if (!friend) {
+        throw new NotFoundException('User not found');
+      }
+
+      const friendship = await this.friendshipModel.findOne({
+        $or: [
+          { requesterId: new Types.ObjectId(userId), responserId: friend._id },
+          { requesterId: friend._id, responserId: new Types.ObjectId(userId) },
+        ],
+        status: FriendshipStatus.ACCEPTED,
+      });
+
+      if (!friendship) {
+        throw new NotFoundException('Friendship not found');
+      }
+
+      await this.friendshipModel.deleteOne({ _id: friendship._id });
+      return { 
+        success: true,
+        message: 'Friend removed successfully'
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Failed to remove friend',
+        error: error.message,
+      };
     }
-
-    const friendship = await this.friendshipModel.findOne({
-      $or: [
-        { requesterId: new Types.ObjectId(userId), responserId: friend._id },
-        { requesterId: friend._id, responserId: new Types.ObjectId(userId) },
-      ],
-      status: FriendshipStatus.ACCEPTED,
-    });
-
-    if (!friendship) {
-      throw new NotFoundException('Friendship not found');
-    }
-
-    await this.friendshipModel.deleteOne({ _id: friendship._id });
   }
 
   async areFriends(userId1: string, userId2: string): Promise<boolean> {
@@ -258,15 +309,19 @@ export class FriendshipService {
     size = 20
   ): Promise<BasePaginationResultDto<UserSummaryDto[]>> {
     const skip = (page - 1) * size;
-    const friendships = await this.friendshipModel.find({
-      $or: [
-        { requesterId: new Types.ObjectId(userId) },
-        { responserId: new Types.ObjectId(userId) },
-      ],
-    }, { requesterId: 1, responserId: 1 });
+    const friendships = await this.friendshipModel.find(
+      {
+        $or: [
+          { requesterId: new Types.ObjectId(userId) },
+          { responserId: new Types.ObjectId(userId) },
+        ],
+        status: FriendshipStatus.ACCEPTED,
+      },
+      { requesterId: 1, responserId: 1 }
+    );
 
     const relatedUserIds = new Set<string>();
-    friendships.forEach(friendship => {
+    friendships.forEach((friendship) => {
       if (friendship.requesterId.toString() !== userId) {
         relatedUserIds.add(friendship.requesterId.toString());
       }
@@ -276,13 +331,15 @@ export class FriendshipService {
     });
     relatedUserIds.add(userId);
     const userQuery: Record<string, unknown> = {
-      _id: { $nin: Array.from(relatedUserIds).map(id => new Types.ObjectId(id)) }
+      _id: {
+        $nin: Array.from(relatedUserIds).map((id) => new Types.ObjectId(id)),
+      },
     };
     if (search && search.trim()) {
       userQuery.$or = [
         { username: { $regex: search.trim(), $options: 'i' } },
         { name: { $regex: search.trim(), $options: 'i' } },
-        { email: { $regex: search.trim(), $options: 'i' } }
+        { email: { $regex: search.trim(), $options: 'i' } },
       ];
     }
 
@@ -294,7 +351,7 @@ export class FriendshipService {
       .limit(size)
       .lean();
 
-    const userSummaries = users.map(user => ({
+    const userSummaries = users.map((user) => ({
       id: user._id.toString(),
       username: user.username,
       name: user.name,
@@ -304,11 +361,14 @@ export class FriendshipService {
     return new BasePaginationResultDto(userSummaries, total, page, size);
   }
 
-  async getFriendshipStatus(userId: string, username: string): Promise<{ status: FriendshipStatus | null, friendship?: FriendshipDto }> {
+  async getFriendshipStatus(
+    userId: string,
+    username: string
+  ): Promise<{ status: FriendshipStatus | null; friendship?: FriendshipDto }> {
     const user = await this.userModel.findOne({
-      username: username.toLowerCase()
+      username: username.toLowerCase(),
     });
-    
+
     if (!user) {
       return { status: null };
     }
@@ -316,8 +376,8 @@ export class FriendshipService {
     const friendship = await this.friendshipModel.findOne({
       $or: [
         { requesterId: new Types.ObjectId(userId), responserId: user._id },
-        { requesterId: user._id, responserId: new Types.ObjectId(userId) }
-      ]
+        { requesterId: user._id, responserId: new Types.ObjectId(userId) },
+      ],
     });
 
     if (!friendship) {
@@ -330,9 +390,9 @@ export class FriendshipService {
       friendship.toJSON()
     );
 
-    return { 
+    return {
       status: friendship.status,
-      friendship: friendshipDto
+      friendship: friendshipDto,
     };
   }
 }

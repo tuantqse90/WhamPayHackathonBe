@@ -33,7 +33,7 @@ export class FriendshipController {
   async getFriends(
     @Req() req: Request,
     @Query() listFriendsDto: ListFriendsDto
-  ): Promise<BasePaginationResultDto<FriendshipDto[]>> {
+  ): Promise<BasePaginationResultDto<UserSummaryDto[]>> {
     return this.friendshipService.getFriends(req.user['id'], listFriendsDto);
   }
 
@@ -105,7 +105,7 @@ export class FriendshipController {
   async getFriendshipStatus(
     @Req() req: Request,
     @Param('username') username: string
-  ): Promise<{ status: string | null, friendship?: FriendshipDto }> {
+  ): Promise<{ status: string | null; friendship?: FriendshipDto }> {
     return this.friendshipService.getFriendshipStatus(req.user['id'], username);
   }
 }
